@@ -1,0 +1,104 @@
+import org.sqlite.JDBC
+
+apply plugin: 'com.android.application'
+apply plugin: SqliteFromTxtPlugin
+
+n2wFiles {
+    fileIn = "src/main/assets/dict_ger.txt"
+    tmpCsvFile = "$buildDir/tmp/n2w/n2w.csv"
+    sqliteFile = "src/main/assets/db.sqlite"
+}
+
+android {
+    compileSdkVersion 23
+    buildToolsVersion "23.0.2"
+
+    defaultConfig {
+        applicationId "de.faysapps.numtowordgen"
+        minSdkVersion 8
+        targetSdkVersion 23
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.txt'
+        }
+    }
+}
+
+dependencies {
+    compile files('libs/Trie.jar')
+    compile files('libs/android-support-v4.jar')
+}
+
+/**
+ * Custom plugin for generating a SQLite db from a list of words at build time.
+ */
+class SqliteFromTxtPlugin implements Plugin<Project> {
+    void apply(Project project) {
+        project.extensions.create("n2wFiles", SqliteFromTxtPluginExtension)
+        // Add a task that uses the configuration
+        project.task('sqliteFromText') << {
+            File fileIn = project.file(project.n2wFiles.fileIn)
+            File tmpCsvFile = project.file(project.n2wFiles.tmpCsvFile)
+            File sqliteFile = project.file(project.n2wFiles.sqliteFile)
+            println "Txt file exists? ${fileIn.exists()}"
+            println "Txt file length: ${fileIn.length()}"
+            if (!tmpCsvFile.exists()) {
+                tmpCsvFile.getParentFile().mkdirs()
+                project.txtToCsv(fileIn, tmpCsvFile)
+            }
+            sqliteFile.delete();
+            project.csvToSqlite(tmpCsvFile, sqliteFile)
+        }
+    }
+}
+
+class SqliteFromTxtPluginExtension {
+    def fileIn = "src/main/assets/dict_ger.txt"
+    def tmpCsvFile = "n2w.csv"
+    def sqliteFile = "src/main/assets/db.sqlite"
+}
+
+def csvToSqlite(File csvFile, File sqliteFile) {
+    def conn = JDBC.createConnection("jdbc:sqlite:$sqliteFile.absolutePath", new Properties());
+    def sql = conn.createStatement()
+    sql.execute('DROP TABLE IF EXISTS n2w;')
+    sql.execute('CREATE TABLE n2w (num INTEGER, word TEXT);')
+    sql.execute('BEGIN TRANSACTION')
+    csvFile.eachLine { line ->
+        def vals = line.split(',')
+        sql.execute("""INSERT INTO n2w VALUES (${vals[0]}, "${vals[1]}");""")
+    }
+    sql.execute('END TRANSACTION')
+}
+
+def txtToCsv(File fileIn, File fileOut) {
+    def keyboard = [
+            2: 'abc',
+            3: 'def',
+            4: 'ghi',
+            5: 'jkl',
+            6: 'mno',
+            7: 'pqrs',
+            8: 'tuv',
+            9: 'wxyz',
+    ]
+
+    def keyboardInv = [:]
+    keyboard.each { k, v -> v.each { c -> keyboardInv[c] = k } }
+
+    def w2n = { word -> word.toLowerCase().collect { c -> keyboardInv[c] }.join() }
+
+    fileOut.withWriter {
+        out ->
+            fileIn.eachLine {
+                word ->
+                    def num = w2n(word)
+                    if (!num.contains('null')) {
+                        out.println([num, word].join(', '))
+                    }
+            }
+    }
+}
