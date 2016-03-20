@@ -1,4 +1,4 @@
-package de.faysapps.numtowordgen;
+package de.faysapps.pinnr;
 
 import android.app.Activity;
 import android.database.sqlite.SQLiteDatabase;

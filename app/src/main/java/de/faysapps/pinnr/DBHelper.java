@@ -1,4 +1,4 @@
-package de.faysapps.numtowordgen;
+package de.faysapps.pinnr;
 
 import java.util.ArrayList;
 import java.util.HashMap;
