@@ -6,7 +6,7 @@ apply plugin: SqliteFromTxtPlugin
 n2wFiles {
     fileIn = "src/main/assets/dict_ger.txt"
     tmpCsvFile = "$buildDir/tmp/n2w/n2w.csv"
-    sqliteFile = "src/main/assets/db.sqlite"
+    sqliteFile = "src/main/assets/databases/db.sqlite"
 }
 
 android {
@@ -30,6 +30,8 @@ android {
 dependencies {
     compile files('libs/Trie.jar')
     compile files('libs/android-support-v4.jar')
+    compile 'com.readystatesoftware.sqliteasset:sqliteassethelper:+'
+    compile "com.google.guava:guava:19.0"
 }
 
 /**
