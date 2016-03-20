@@ -27,6 +27,9 @@ android {
     }
 }
 
+build.dependsOn sqliteFromText
+clean.dependsOn cleanSqliteFromText
+
 dependencies {
     compile files('libs/Trie.jar')
     compile files('libs/android-support-v4.jar')
@@ -45,14 +48,18 @@ class SqliteFromTxtPlugin implements Plugin<Project> {
             File fileIn = project.file(project.n2wFiles.fileIn)
             File tmpCsvFile = project.file(project.n2wFiles.tmpCsvFile)
             File sqliteFile = project.file(project.n2wFiles.sqliteFile)
-            println "Txt file exists? ${fileIn.exists()}"
-            println "Txt file length: ${fileIn.length()}"
             if (!tmpCsvFile.exists()) {
                 tmpCsvFile.getParentFile().mkdirs()
                 project.txtToCsv(fileIn, tmpCsvFile)
             }
             sqliteFile.delete();
             project.csvToSqlite(tmpCsvFile, sqliteFile)
+        }
+        project.task('cleanSqliteFromText') << {
+            File tmpCsvFile = project.file(project.n2wFiles.tmpCsvFile)
+            File sqliteFile = project.file(project.n2wFiles.sqliteFile)
+            tmpCsvFile.delete()
+            sqliteFile.delete()
         }
     }
 }
